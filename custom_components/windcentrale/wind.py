@@ -244,8 +244,17 @@ class ProductionAPI:
                 _LOGGER.warning('Invalid response from server when collecting production data with the response data "{}" and status code {}'.format(request_data.text, request_data.status_code))
                 return
 
-            self.response_data.clear()
             json_items = json.loads(json.dumps(request_data.json()))
+            json_turbine_items = json_items[self.windturbine_id]
+
+            if "timestamp" in json_turbine_items and "timestamp" in self.response_data:
+                new_timestamp = datetime.datetime.fromtimestamp(int(json_turbine_items["timestamp"]))
+
+                if not new_timestamp > self.response_data["timestamp"]:
+                   _LOGGER.warning('Received unexpected historical data from windturbine {} (timestamp {}) whilst having received newer data (timestamp {}) earlier.'.format(self.windturbine_name, new_timestamp, self.response_data["timestamp"]))
+                   return
+
+            self.response_data.clear()
 
             for json_item in json_items:
 
